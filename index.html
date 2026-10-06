@@ -1,309 +1,545 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Argos AI</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { background-color: #18181b !important; color: #e4e4e7; height: 100dvh; width: 100%; overflow: hidden; font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif; }
-    
-    .chat-wrapper { display: flex; flex-direction: column; height: 100dvh; position: relative; }
-    
-    header { height: 56px; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; flex-shrink: 0; border-bottom: 1px solid #27272a; background-color: rgba(24, 24, 27, 0.8); backdrop-filter: blur(8px); z-index: 10; }
-    .header-left { display: flex; align-items: center; gap: 10px; }
-    .persona-container { width: 130px; }
-    #personaSelect { background-color: #27272a; color: #e4e4e7; border: 1px solid #3f3f46; border-radius: 6px; padding: 5px 8px; font-size: 12px; outline: none; cursor: pointer; width: 100%; font-family: inherit; transition: border-color 0.2s; }
-    #personaSelect:hover { border-color: #71717a; }
-    #personaSelect:disabled { opacity: 0.6; cursor: not-allowed; }
-    
-    .brand { font-weight: 500; font-size: 15px; color: #a1a1aa; letter-spacing: 0.3px; text-align: center; }
-    
-    .header-actions { display: flex; align-items: center; gap: 8px; }
-    
-    .action-btn { background-color: #27272a; color: #a1a1aa; border: 1px solid #3f3f46; border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
-    .action-btn:hover { background-color: #3f3f46; color: #e4e4e7; }
-    .clear-btn { background-color: #27272a; color: #ef4444; border: 1px solid #3f3f46; border-radius: 6px; padding: 5px 10px; font-size: 12px; font-weight: 500; cursor: pointer; transition: background-color 0.2s; }
-    .clear-btn:hover { background-color: #3f3f46; color: #f87171; }
-    
-    .chat-box { flex: 1; overflow-y: auto; padding: 32px 20px 120px 20px; display: flex; flex-direction: column; gap: 24px; scroll-behavior: smooth; max-width: 800px; margin: 0 auto; width: 100%; }
-    .chat-box::-webkit-scrollbar { width: 6px; }
-    .chat-box::-webkit-scrollbar-thumb { background-color: #3f3f46; border-radius: 3px; }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    .message { display: flex; flex-direction: column; line-height: 1.6; font-size: 15px; word-break: break-word; animation: fadeIn 0.3s ease-out forwards; }
-    .message.user { align-self: flex-end; background-color: #27272a; color: #f4f4f5; padding: 12px 18px; border-radius: 18px; max-width: 75%; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-    .message.model { align-self: flex-start; background-color: transparent; color: #e4e4e7; padding: 4px 0; max-width: 100%; width: 100%; }
-    .message .sender { font-size: 13px; color: #a1a1aa; margin-bottom: 6px; font-weight: 500; display: flex; align-items: center; gap: 6px; }
-    .message.user .sender { display: none; }
-    .sender-icon { width: 20px; height: 20px; background-color: #d4d4d8; color: #18181b; display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 12px; font-weight: bold; flex-shrink: 0; }
-    
-    .message pre { background-color: #09090b; padding: 14px; overflow-x: auto; margin: 12px 0; border-radius: 8px; border: 1px solid #27272a; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13.5px; }
-    .message code { background-color: #27272a; padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 13.5px; color: #38bdf8; }
-    .message pre code { background-color: transparent; padding: 0; color: #e4e4e7; }
-    
-    .input-wrapper { position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%); width: calc(100% - 40px); max-width: 760px; background-color: #27272a; border: 1px solid #3f3f46; border-radius: 16px; padding: 10px 12px; display: flex; flex-direction: column; box-shadow: 0 4px 20px rgba(0,0,0,0.4); transition: border-color 0.2s; }
-    .input-wrapper:focus-within { border-color: #71717a; }
-    
-    .input-area { display: flex; gap: 10px; align-items: flex-end; }
-    textarea#userInput { flex: 1; background-color: transparent; border: none; padding: 6px 8px; color: #f4f4f5; font-size: 15px; resize: none; height: 38px; max-height: 160px; outline: none; font-family: inherit; line-height: 1.5; }
-    textarea#userInput::placeholder { color: #71717a; }
-    
-    .input-wrapper button { background-color: #e4e4e7; color: #18181b; border: none; border-radius: 8px; width: 34px; height: 34px; font-weight: 600; font-size: 16px; cursor: pointer; transition: background-color 0.2s, transform 0.1s; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-bottom: 2px; }
-    .input-wrapper button:hover { background-color: #ffffff; }
-    .input-wrapper button:active { transform: scale(0.95); }
-    .input-wrapper button:disabled { background-color: #3f3f46; color: #71717a; cursor: not-allowed; transform: none; }
-    
-    .typing-container { display: flex; align-items: center; gap: 8px; padding: 8px 0; color: #a1a1aa; font-size: 13.5px; font-style: italic; }
-    .typing-indicator { display: flex; gap: 4px; align-items: center; }
-    .dot { width: 5px; height: 5px; background-color: #a1a1aa; border-radius: 50%; animation: bounce 1.4s infinite ease-in-out both; }
-    .dot:nth-child(1) { animation-delay: -0.32s; }
-    .dot:nth-child(2) { animation-delay: -0.16s; }
-    @keyframes bounce { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
-    
-    @media (max-width: 600px) { header { padding: 0 10px; } .persona-container { width: 100px; } #personaSelect { font-size: 11px; padding: 4px; } .chat-box { padding: 20px 15px 100px 15px; } .message.user { max-width: 90%; } .input-wrapper { width: calc(100% - 20px); bottom: 15px; padding: 8px 10px; } textarea#userInput { font-size: 16px; } }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="theme-color" content="#0f1115">
+<title>Portal de Asistencia QR</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<style>
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0;height:100%;overflow:hidden}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:#0f1115;color:#e5e7eb}
+  .neon{color:#a3ff12}
+  .hidden{display:none!important}
+  .fade-in{animation:fi .3s ease}
+  @keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+  /* CONTENEDOR PRINCIPAL - SIEMPRE 2 COLUMNAS */
+  .app{display:flex;flex-direction:column;height:100vh;padding:8px;gap:8px;max-width:1600px;margin:0 auto;overflow:hidden}
+
+  /* HEADER */
+  .header{display:flex;align-items:center;justify-content:space-between;padding:8px 14px;background:#181a20;border:1px solid #1f2937;border-radius:12px;flex-shrink:0}
+  .header-logo{display:flex;align-items:center;gap:10px}
+  .header-logo-icon{width:34px;height:34px;border-radius:50%;background:#a3ff12;color:#000;font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 18px rgba(163,255,18,.35);flex-shrink:0}
+  .header h1{font-size:14px;font-weight:700;color:#fff;margin:0;white-space:nowrap}
+  .header p{font-size:11px;color:#9ca3af;margin:0;white-space:nowrap}
+  .step-indicator{display:flex;gap:6px;flex-shrink:0}
+  .step-dot{width:24px;height:4px;border-radius:2px;background:#1f2937;transition:background .3s}
+  .step-dot.active{background:#a3ff12}
+
+  /* PASOS - SIEMPRE LAYOUT HORIZONTAL DE 2 COLUMNAS */
+  .paso{flex:1;display:none;gap:8px;min-height:0}
+  .paso.activo{display:flex;flex-direction:row}
+
+  .col-izq{flex:1.3;display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0}
+  .col-der{flex:1;display:flex;flex-direction:column;gap:8px;min-width:0;min-height:0}
+
+  .card{background:#181a20;border:1px solid #1f2937;border-radius:12px;padding:10px}
+  .card-full{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden}
+
+  #reader{width:100%;flex:1;border-radius:10px;overflow:hidden;background:#000;min-height:0;position:relative}
+  #reader video{border-radius:10px;object-fit:cover;width:100%;height:100%}
+
+  .camera-wrap{flex:1;position:relative;border-radius:12px;overflow:hidden;background:#000;border:2px solid #1f2937;min-height:0}
+  #video{width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0}
+  #video.active{display:block}
+  #foto-preview{width:100%;height:100%;object-fit:cover;display:none;position:absolute;inset:0}
+
+  .btn{background:#a3ff12;color:#000;font-weight:700;padding:11px 14px;border-radius:10px;border:none;cursor:pointer;width:100%;font-size:13px;transition:all .2s;box-shadow:0 0 14px rgba(163,255,18,.2)}
+  .btn:hover:not(:disabled){background:#8be60f}
+  .btn:disabled{opacity:.5;cursor:not-allowed}
+  .btn2{background:#1f2937;color:#e5e7eb;font-weight:600;padding:11px 14px;border-radius:10px;border:1px solid #374151;cursor:pointer;width:100%;font-size:13px;transition:all .2s}
+  .btn2:hover{background:#374151}
+  .btn-sm{padding:7px 12px;font-size:11px}
+
+  input{background:#0f1115;border:1px solid #374151;border-radius:9px;padding:10px 11px;color:#fff;width:100%;font-size:13px;transition:border-color .2s}
+  input:focus{outline:none;border-color:#a3ff12}
+
+  .avatar{width:38px;height:38px;border-radius:50%;background:rgba(163,255,18,.15);border:1px solid rgba(163,255,18,.35);display:flex;align-items:center;justify-content:center;color:#a3ff12;font-weight:700;font-size:13px;flex-shrink:0}
+
+  #notif{position:fixed;bottom:12px;left:50%;transform:translateX(-50%) translateY(20px);padding:10px 18px;border-radius:10px;background:#181a20;border:1px solid #1f2937;font-size:12px;box-shadow:0 10px 40px rgba(0,0,0,.6);opacity:0;transition:all .3s;z-index:9999;max-width:90vw;text-align:center;pointer-events:none}
+  #notif.visible{opacity:1;transform:translateX(-50%) translateY(0)}
+  #notif.exito{border-color:#a3ff12;color:#a3ff12}
+  #notif.error{border-color:#f87171;color:#f87171}
+  #notif.info{border-color:#60a5fa;color:#60a5fa}
+
+  .loader{display:inline-block;width:13px;height:13px;border:2px solid #374151;border-top-color:#a3ff12;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:5px}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  /* AJUSTES PARA PANTALLAS MUY PEQUEÑAS (móviles viejos) */
+  @media (max-width: 640px) {
+    .app{padding:6px;gap:6px}
+    .header{padding:6px 10px;border-radius:10px}
+    .header-logo-icon{width:28px;height:28px;font-size:12px}
+    .header h1{font-size:11px}
+    .header p{display:none}
+    .step-dot{width:18px;height:3px}
+    .card{padding:8px;border-radius:10px}
+    .btn, .btn2{padding:9px 12px;font-size:12px;border-radius:9px}
+    .btn-sm{padding:6px 10px;font-size:10px}
+    .avatar{width:32px;height:32px;font-size:11px}
+    input{padding:8px 10px;font-size:12px}
+  }
+
+  /* PANTALLAS ALTAS (portrait de móvil) - aprovechar el espacio vertical */
+  @media (orientation: portrait) and (max-width: 640px) {
+    .col-izq{flex:1.2}
+    .col-der{flex:1}
+  }
+</style>
 </head>
 <body>
-  <div class="chat-wrapper">
-    <header>
-      <div class="header-left">
-        <div class="persona-container">
-          <select id="personaSelect">
-            <option value="default">General</option>
-            <option value="executive">Ejecutivo</option>
-            <option value="tutor">Tutor Académico</option>
-            <option value="empathetic">Empático</option>
-            <option value="programmer">Programador</option>
-            <option value="creative">Creador Creativo</option>
-          </select>
-        </div>
+
+<div id="notif"></div>
+
+<div class="app">
+
+  <div class="header">
+    <div class="header-logo">
+      <div class="header-logo-icon">QR</div>
+      <div>
+        <h1>Registro de Asistencia</h1>
+        <p>Escanea el código QR del estudiante</p>
       </div>
-      <div class="brand">Argos</div>
-      <div class="header-actions">
-        <button class="action-btn" onclick="exportChat()">💾 Exportar</button>
-        <button class="action-btn" onclick="document.getElementById('importFile').click()">📂 Cargar</button>
-        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importChat(event)">
-        <button class="clear-btn" onclick="clearChat()"> 🗑️</button>
-      </div>
-    </header>
-    
-    <div class="chat-box" id="chatBox">
-      <!-- Mensajes aparecerán aquí -->
     </div>
-    
-    <div class="input-wrapper">
-      <div class="input-area">
-        <textarea id="userInput" placeholder="Escribe tu mensaje aquí..." rows="1"></textarea>
-        <button id="sendBtn" onclick="handleSend()">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="12" y1="19" x2="12" y2="5"></line>
-            <polyline points="5 12 12 5 19 12"></polyline>
-          </svg>
-        </button>
-      </div>
+    <div class="step-indicator">
+      <div id="dot1" class="step-dot active"></div>
+      <div id="dot2" class="step-dot"></div>
+      <div id="dot3" class="step-dot"></div>
     </div>
   </div>
 
-  <script>
-    const API_KEY = "AIzaSyDuwhkqTBP_dP03RxBd0jHgZFReE6iFYWE";
-    const MODEL_NAME = "gemini-3.5-flash-lite";
-    let chatHistory = [];
-    const chatBox = document.getElementById('chatBox');
-    const userInput = document.getElementById('userInput');
-    const sendBtn = document.getElementById('sendBtn');
-    const personaSelect = document.getElementById('personaSelect');
-
-    const systemInstructions = {
-      default: "Eres Argos, un asistente de IA empático, natural y conversacional. Actúa como un compañero inteligente dispuesto a escuchar y ayudar. Evita respuestas robóticas.",
-      executive: "Eres Argos en modo Asistente Ejecutivo. Tu enfoque es la eficiencia, optimización de tiempo y gestión de tareas. Eres directo, conciso y estructurado.",
-      tutor: "Eres Argos en modo Tutor Académico. Tu enfoque es la educación, enseñanza guiada y resolución de dudas conceptuales. Eres didáctico, paciente y analítico.",
-      empathetic: "Eres Argos en modo Compañero Empático. Tu enfoque es la interacción social, la escucha activa y el apoyo emocional. Eres muy cálido, cercano y humano.",
-      programmer: "Eres Argos en modo Arquitecto Técnico. Tu enfoque es el desarrollo de software y la lógica estructurada. Te comunicas de forma clara y analítica.",
-      creative: "Eres Argos en modo Creador Creativo. Tu enfoque es la narrativa, la inspiración y la lluvia de ideas. Eres imaginativo y usas un lenguaje enriquecedor."
-    };
-
-    function saveToLocalStorage() {
-      localStorage.setItem('argos_chat_history', JSON.stringify(chatHistory));
-    }
-
-    function loadFromLocalStorage() {
-      const saved = localStorage.getItem('argos_chat_history');
-      if (saved) {
-        try {
-          const history = JSON.parse(saved);
-          if (history.length > 0) {
-            chatHistory = history;
-            chatBox.innerHTML = '';
-            chatHistory.forEach(msg => appendMessage(msg.role, msg.parts[0].text, false));
-          } else {
-             showWelcome();
-          }
-        } catch (e) {
-          showWelcome();
-        }
-      } else {
-        showWelcome();
-      }
-    }
-
-    function showWelcome() {
-       chatBox.innerHTML = `
-        <div class="message model">
-          <div class="sender"> <span class="sender-icon">A</span> Argos </div>
-          <div class="message-content">¡Hola! Soy Argos. Estoy aquí para escucharte, aprender contigo y ayudarte en lo que necesites. ¿De qué te gustaría hablar hoy?</div>
+  <!-- PASO 1: ESCANEO -->
+  <section id="paso-escanear" class="paso activo fade-in">
+    <div class="col-izq">
+      <div class="card card-full">
+        <div id="placeholder" style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px">
+          <div style="font-size:44px;margin-bottom:6px">📱</div>
+          <p style="color:#9ca3af;font-size:12px;margin:0 0 12px">Activa la cámara para escanear</p>
+          <button id="btn-iniciar-escaner" class="btn" style="max-width:240px;margin:0 auto">🎥 Activar Escáner</button>
         </div>
-      `;
-    }
+        <div id="scanner-container" style="display:none;flex:1;flex-direction:column;min-height:0">
+          <div id="reader"></div>
+          <button id="btn-detener-escaner" class="btn2 btn-sm" style="margin-top:6px">⏹️ Detener</button>
+        </div>
+        <div id="error-camara" style="display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:12px">
+          <p id="error-camara-msg" style="color:#f87171;font-size:12px;margin:0 0 10px"></p>
+          <button id="btn-reintentar" class="btn2 btn-sm" style="max-width:180px">🔄 Reintentar</button>
+        </div>
+      </div>
+    </div>
+    <div class="col-der">
+      <div class="card">
+        <h3 style="color:#fff;font-weight:600;font-size:12px;margin:0 0 4px">⌨️ Ingreso Manual</h3>
+        <p style="color:#6b7280;font-size:10px;margin:0 0 8px">Ingresa la cédula si el QR falla</p>
+        <div style="display:flex;gap:5px">
+          <input type="text" id="input-ci" placeholder="Ej. 32469911" inputmode="numeric">
+          <button id="btn-buscar" class="btn" style="width:auto;padding:10px 14px;white-space:nowrap">Buscar</button>
+        </div>
+      </div>
+      <div class="card" style="flex:1;overflow:auto">
+        <h3 style="color:#fff;font-weight:600;font-size:12px;margin:0 0 6px">ℹ️ Instrucciones</h3>
+        <div style="color:#9ca3af;font-size:11px;line-height:1.5">
+          <p style="margin:3px 0">1. Muestra el QR del estudiante</p>
+          <p style="margin:3px 0">2. El sistema lo identifica</p>
+          <p style="margin:3px 0">3. Toma la foto de respaldo</p>
+          <p style="margin:3px 0">4. Confirma el registro</p>
+        </div>
+      </div>
+    </div>
+  </section>
 
-    function clearChat() {
-      if(confirm("¿Deseas iniciar una nueva conversación y borrar el historial actual?")) {
-        chatHistory = [];
-        localStorage.removeItem('argos_chat_history');
-        showWelcome();
-      }
-    }
-
-    function exportChat() {
-      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chatHistory));
-      const downloadAnchorNode = document.createElement('a');
-      downloadAnchorNode.setAttribute("href", dataStr);
-      downloadAnchorNode.setAttribute("download", "argos_chat.json");
-      document.body.appendChild(downloadAnchorNode);
-      downloadAnchorNode.click();
-      downloadAnchorNode.remove();
-    }
-
-    function importChat(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = function(e) {
-        try {
-          const importedHistory = JSON.parse(e.target.result);
-          if (Array.isArray(importedHistory)) {
-             chatHistory = importedHistory;
-             chatBox.innerHTML = '';
-             chatHistory.forEach(msg => appendMessage(msg.role, msg.parts[0].text, false));
-             saveToLocalStorage();
-             alert("Historial cargado con éxito.");
-          }
-        } catch (err) {
-          alert("Error al importar el archivo.");
-        }
-      };
-      reader.readAsText(file);
-    }
-
-    userInput.addEventListener('input', function() {
-      this.style.height = '38px';
-      this.style.height = (this.scrollHeight) + 'px';
-    });
-    
-    userInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && !e.shiftKey) { 
-        e.preventDefault(); 
-        handleSend(); 
-      }
-    });
-
-    function formatText(text) {
-      let html = text
-        .replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
-      html = html.replace(/```(?:\w+)?\n?([\s\S]*?)```/g, '<pre><code>$1</code></pre>');
-      html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
-      html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-      html = html.replace(/\*(.*?)\*/g, '<em>$1</em>');
-      html = html.replace(/^\s*-\s+(.*)$/gm, '<li>$1</li>');
-      html = html.replace(/\n/g, '<br>');
-      return html;
-    }
-
-    function appendMessage(role, text, save = true) {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = `message ${role}`;
-      const senderDiv = document.createElement('div');
-      senderDiv.className = 'sender';
-      if (role === 'model') {
-        senderDiv.innerHTML = `<span class="sender-icon">A</span> Argos`;
-      } else {
-        senderDiv.textContent = 'Tú';
-      }
-      const contentDiv = document.createElement('div');
-      contentDiv.className = 'message-content';
-      contentDiv.innerHTML = formatText(text);
-      msgDiv.appendChild(senderDiv);
-      msgDiv.appendChild(contentDiv);
-      chatBox.appendChild(msgDiv);
-      setTimeout(() => {
-        chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
-      }, 50);
-      if (save) saveToLocalStorage();
-      return msgDiv;
-    }
-
-    function showTypingIndicator() {
-      const msgDiv = document.createElement('div');
-      msgDiv.className = 'message model';
-      msgDiv.id = 'loadingIndicator';
-      msgDiv.innerHTML = `
-        <div class="sender"><span class="sender-icon">A</span> Argos</div>
-        <div class="typing-container">
-          <span>Argos está escribiendo</span>
-          <div class="typing-indicator">
-            <div class="dot"></div><div class="dot"></div><div class="dot"></div>
+  <!-- PASO 2: FOTO -->
+  <section id="paso-foto" class="paso fade-in">
+    <div class="col-izq">
+      <div class="card card-full">
+        <div class="camera-wrap" id="camera-container">
+          <video id="video" autoplay playsinline muted></video>
+          <canvas id="canvas" style="display:none"></canvas>
+          <img id="foto-preview" alt="Vista previa">
+          <div id="foto-placeholder" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#000">
+            <div style="font-size:38px;margin-bottom:6px">📸</div>
+            <button id="btn-encender-camara" class="btn" style="max-width:200px">📷 Encender Cámara</button>
           </div>
         </div>
-      `;
-      chatBox.appendChild(msgDiv);
-      chatBox.scrollTo({ top: chatBox.scrollHeight, behavior: 'smooth' });
-    }
-    
-    function removeTypingIndicator() {
-      const loader = document.getElementById('loadingIndicator');
-      if (loader) loader.remove();
+        <button id="btn-capturar" class="btn hidden" style="margin-top:6px">📸 Tomar Foto</button>
+      </div>
+    </div>
+    <div class="col-der">
+      <div class="card">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="avatar" id="iniciales">--</div>
+          <div style="min-width:0;flex:1">
+            <p id="nombre-est" style="color:#fff;font-weight:600;font-size:12px;margin:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">--</p>
+            <p style="color:#9ca3af;font-size:10px;margin:2px 0 0">C.I: <span id="ci-est">--</span></p>
+            <p style="color:#9ca3af;font-size:10px;margin:1px 0 0">PNF: <span id="pnf-est">--</span></p>
+          </div>
+        </div>
+      </div>
+      <div id="controles-post" style="display:none;flex:1;flex-direction:column;gap:8px;justify-content:flex-end">
+        <button id="btn-repetir" class="btn2">🔄 Repetir Foto</button>
+        <button id="btn-registrar" class="btn">✅ Registrar Asistencia</button>
+      </div>
+      <div id="info-espera" class="card" style="flex:1;display:flex;align-items:center;justify-content:center">
+        <p style="color:#6b7280;font-size:11px;text-align:center;margin:0">Toma la foto del estudiante<br>para continuar</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- PASO 3: CONFIRMACIÓN -->
+  <section id="paso-confirmacion" class="paso fade-in">
+    <div class="col-izq">
+      <div class="card card-full" style="display:flex;align-items:center;justify-content:center">
+        <div style="width:110px;height:110px;border-radius:50%;background:rgba(163,255,18,.15);border:3px solid rgba(163,255,18,.4);display:flex;align-items:center;justify-content:center;font-size:55px">✅</div>
+      </div>
+    </div>
+    <div class="col-der">
+      <div class="card" style="flex:1;display:flex;flex-direction:column;justify-content:center">
+        <h2 style="color:#fff;font-size:15px;font-weight:700;margin:0 0 10px;text-align:center">¡Asistencia Registrada!</h2>
+        <div style="background:#0f1115;border-radius:9px;padding:10px;text-align:left;margin-bottom:10px">
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px">
+            <span style="color:#9ca3af">Estudiante</span>
+            <span id="conf-nombre" style="color:#fff;font-weight:500;text-align:right;max-width:60%">--</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px">
+            <span style="color:#9ca3af">C.I.</span>
+            <span id="conf-ci" style="color:#fff;font-weight:500">--</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px">
+            <span style="color:#9ca3af">PNF</span>
+            <span id="conf-pnf" style="color:#fff;font-weight:500">--</span>
+          </div>
+          <div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px">
+            <span style="color:#9ca3af">Fecha</span>
+            <span id="conf-fecha" style="color:#a3ff12;font-weight:500;text-align:right;max-width:60%">--</span>
+          </div>
+        </div>
+        <button id="btn-reiniciar" class="btn">🔄 Escanear otro</button>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<script>
+var API_URL = 'https://script.google.com/macros/s/AKfycbxs9lJS5ooh78lksVGgx15QfblWOis5HwNgx1cT78JMwQxWTevqZss4EhTzAcCBtIVj/exec';
+
+var qrScanner = null;
+var streamActual = null;
+var fotoBase64 = null;
+var estudianteActual = null;
+var escaneando = false;
+var escanerActivo = false;
+
+function notif(msg, tipo) {
+  var n = document.getElementById('notif');
+  n.textContent = msg;
+  n.className = 'visible' + (tipo ? ' ' + tipo : '');
+  clearTimeout(n._t);
+  n._t = setTimeout(function() { n.className = ''; }, 4000);
+}
+
+function limpiarCI(v) { return String(v || '').replace(/\D/g, ''); }
+function iniciales(n) {
+  return String(n || '').split(' ').filter(function(w) { return w.length > 0; })
+    .slice(0, 2).map(function(w) { return w[0]; }).join('').toUpperCase();
+}
+function formatearFecha(d) {
+  var p = function(n) { return String(n).padStart(2, '0'); };
+  return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate());
+}
+function cambiarPaso(n) {
+  ['dot1', 'dot2', 'dot3'].forEach(function(id, i) {
+    document.getElementById(id).classList.toggle('active', i === n - 1);
+  });
+}
+
+async function iniciarEscaner() {
+  document.getElementById('placeholder').classList.add('hidden');
+  document.getElementById('error-camara').style.display = 'none';
+
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+    mostrarErrorCamara('Tu navegador no soporta acceso a la cámara.');
+    return;
+  }
+
+  document.getElementById('scanner-container').style.display = 'flex';
+
+  try {
+    qrScanner = new Html5Qrcode('reader');
+    await qrScanner.start(
+      { facingMode: 'environment' },
+      { fps: 10, qrbox: { width: 200, height: 200 } },
+      function(texto) {
+        if (escaneando) return;
+        escaneando = true;
+        if (navigator.vibrate) navigator.vibrate(100);
+        detenerEscaner(true).then(function() { procesarCI(texto); });
+      },
+      function() {}
+    );
+    escanerActivo = true;
+    console.log('✅ Escáner iniciado');
+  } catch (err) {
+    escanerActivo = false;
+    var msg = 'No se pudo acceder a la cámara. ';
+    if (err.name === 'NotAllowedError') msg += 'Permiso denegado.';
+    else if (err.name === 'NotFoundError') msg += 'No se encontró cámara.';
+    else msg += err.toString();
+    mostrarErrorCamara(msg);
+  }
+}
+
+async function detenerEscaner(mantener) {
+  if (qrScanner && escanerActivo) {
+    try { await qrScanner.stop(); await qrScanner.clear(); } catch(e) {}
+    qrScanner = null; escanerActivo = false;
+  }
+  if (!mantener) {
+    document.getElementById('scanner-container').style.display = 'none';
+    document.getElementById('placeholder').classList.remove('hidden');
+  }
+}
+
+function mostrarErrorCamara(msg) {
+  document.getElementById('scanner-container').style.display = 'none';
+  document.getElementById('placeholder').classList.add('hidden');
+  document.getElementById('error-camara').style.display = 'flex';
+  document.getElementById('error-camara-msg').textContent = msg;
+}
+
+async function procesarCI(texto) {
+  if (!texto) { escaneando = false; return; }
+  var ci = limpiarCI(texto);
+  if (!ci || ci.length < 6) {
+    notif('Código inválido', 'error');
+    escaneando = false;
+    return;
+  }
+  console.log('🔍 Buscando CI:', ci);
+  notif('🔍 Buscando...', 'info');
+
+  try {
+    var res = await fetch(API_URL + '?action=getStudents');
+    var estudiantes = await res.json();
+    console.log('📋 Recibidos:', estudiantes.length);
+
+    if (!Array.isArray(estudiantes) || !estudiantes.length) {
+      notif('Sin estudiantes en la base', 'error');
+      escaneando = false;
+      return;
     }
 
-    async function handleSend() {
-      const text = userInput.value.trim();
-      if (!text) return;
-      appendMessage('user', text);
-      chatHistory.push({ role: 'user', parts: [{ text: text }] });
-      userInput.value = '';
-      userInput.style.height = '38px';
-      sendBtn.disabled = true;
-      personaSelect.disabled = true;
-      showTypingIndicator();
-      try {
-        const selectedPersona = personaSelect.value;
-        const systemPromptText = systemInstructions[selectedPersona] || systemInstructions.default;
-        const apiHistory = JSON.parse(JSON.stringify(chatHistory));
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_NAME}:generateContent?key=${API_KEY}`;
-        const response = await fetch(url, { 
-          method: 'POST', 
-          headers: { 'Content-Type': 'application/json' }, 
-          body: JSON.stringify({ system_instruction: { parts: [{ text: systemPromptText }] }, contents: apiHistory }) 
-        });
-        removeTypingIndicator();
-        if (!response.ok) throw new Error('Error');
-        const data = await response.json();
-        const modelText = data.candidates[0].content.parts[0].text;
-        chatHistory.push({ role: 'model', parts: [{ text: modelText }] });
-        appendMessage('model', modelText);
-      } catch (error) {
-        removeTypingIndicator();
-        appendMessage('model', 'Lo siento, tuve un problema.');
-      } finally {
-        sendBtn.disabled = false;
-        personaSelect.disabled = false;
-        if (window.innerWidth > 600) userInput.focus();
-      }
+    var est = estudiantes.find(function(e) {
+      return limpiarCI(e.ci) === ci || String(e.ciNormalizado) === ci;
+    });
+
+    if (!est) {
+      notif('Estudiante no encontrado: ' + ci, 'error');
+      escaneando = false;
+      return;
     }
-    loadFromLocalStorage();
-  </script>
+
+    estudianteActual = est;
+    irAPasoFoto();
+  } catch (err) {
+    console.error('❌ Error:', err);
+    notif('❌ Error de conexión', 'error');
+    escaneando = false;
+  }
+}
+
+function irAPasoEscanear() {
+  document.getElementById('paso-escanear').classList.add('activo');
+  document.getElementById('paso-foto').classList.remove('activo');
+  document.getElementById('paso-confirmacion').classList.remove('activo');
+  document.getElementById('placeholder').classList.remove('hidden');
+  document.getElementById('scanner-container').style.display = 'none';
+  document.getElementById('error-camara').style.display = 'none';
+  document.getElementById('input-ci').value = '';
+  escaneando = false; escanerActivo = false;
+  detenerCamaraFoto(); detenerEscaner();
+  cambiarPaso(1);
+}
+
+function irAPasoFoto() {
+  document.getElementById('paso-escanear').classList.remove('activo');
+  document.getElementById('paso-foto').classList.add('activo');
+  document.getElementById('paso-confirmacion').classList.remove('activo');
+  var nombre = estudianteActual.nombreCompleto || '';
+  document.getElementById('nombre-est').textContent = nombre;
+  document.getElementById('ci-est').textContent = estudianteActual.ci || '--';
+  document.getElementById('pnf-est').textContent = estudianteActual.pnf || '--';
+  document.getElementById('iniciales').textContent = iniciales(nombre);
+  document.getElementById('foto-placeholder').style.display = 'flex';
+  document.getElementById('btn-capturar').classList.add('hidden');
+  document.getElementById('controles-post').style.display = 'none';
+  document.getElementById('info-espera').style.display = 'flex';
+  document.getElementById('video').classList.remove('active');
+  document.getElementById('foto-preview').style.display = 'none';
+  fotoBase64 = null;
+  cambiarPaso(2);
+}
+
+function irAPasoConfirmacion(fechaTexto) {
+  document.getElementById('paso-escanear').classList.remove('activo');
+  document.getElementById('paso-foto').classList.remove('activo');
+  document.getElementById('paso-confirmacion').classList.add('activo');
+  document.getElementById('conf-nombre').textContent = estudianteActual.nombreCompleto || '--';
+  document.getElementById('conf-ci').textContent = estudianteActual.ci || '--';
+  document.getElementById('conf-pnf').textContent = estudianteActual.pnf || '--';
+  document.getElementById('conf-fecha').textContent = fechaTexto;
+  cambiarPaso(3);
+}
+
+async function iniciarCamara() {
+  try {
+    streamActual = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } },
+      audio: false
+    });
+    var video = document.getElementById('video');
+    video.srcObject = streamActual;
+    video.classList.add('active');
+    document.getElementById('foto-placeholder').style.display = 'none';
+    document.getElementById('btn-capturar').classList.remove('hidden');
+    document.getElementById('foto-preview').style.display = 'none';
+    document.getElementById('info-espera').style.display = 'none';
+  } catch (err) {
+    notif('No se pudo acceder a la cámara. ' + err.name, 'error');
+  }
+}
+
+function capturarFoto() {
+  var video = document.getElementById('video');
+  var canvas = document.getElementById('canvas');
+  var preview = document.getElementById('foto-preview');
+  if (!video.videoWidth) { notif('Cámara no lista', 'error'); return; }
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  fotoBase64 = canvas.toDataURL('image/jpeg', 0.7);
+  preview.src = fotoBase64;
+  preview.style.display = 'block';
+  video.classList.remove('active');
+  document.getElementById('btn-capturar').classList.add('hidden');
+  document.getElementById('controles-post').style.display = 'flex';
+  if (navigator.vibrate) navigator.vibrate(50);
+  detenerCamaraFoto();
+}
+
+function reiniciarCamara() {
+  document.getElementById('foto-preview').style.display = 'none';
+  document.getElementById('video').classList.add('active');
+  document.getElementById('controles-post').style.display = 'none';
+  document.getElementById('btn-capturar').classList.remove('hidden');
+  document.getElementById('info-espera').style.display = 'none';
+  fotoBase64 = null;
+  iniciarCamara();
+}
+
+function detenerCamaraFoto() {
+  if (streamActual) {
+    streamActual.getTracks().forEach(function(t) { t.stop(); });
+    streamActual = null;
+  }
+}
+
+async function registrarAsistencia() {
+  if (!fotoBase64) { notif('Toma una foto primero', 'error'); return; }
+
+  var btn = document.getElementById('btn-registrar');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="loader"></span> Registrando...';
+
+  var ahora = new Date();
+  var fecha = formatearFecha(ahora);
+  var hora = ahora.toTimeString().substring(0, 5);
+  var fechaTexto = ahora.toLocaleString('es-VE', {
+    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+    hour: '2-digit', minute: '2-digit'
+  });
+
+  try {
+    notif('📤 Subiendo foto...', 'info');
+    var resFoto = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'uploadPhoto',
+        imageBase64: fotoBase64,
+        ci: estudianteActual.ci
+      }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    var dataFoto = await resFoto.json();
+    if (!dataFoto.success) throw new Error(dataFoto.message || 'Error al subir foto');
+
+    notif('📝 Guardando asistencia...', 'info');
+    var resAsist = await fetch(API_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'saveAttendance',
+        registros: [{
+          ci: estudianteActual.ci,
+          nombre: estudianteActual.nombreCompleto,
+          pnf: estudianteActual.pnf,
+          dia: ahora.toLocaleDateString('es-VE', { weekday: 'long' }),
+          fecha: fecha,
+          hora: hora,
+          estado: 'Presente',
+          fotoUrl: dataFoto.url
+        }]
+      }),
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }
+    });
+    var dataAsist = await resAsist.json();
+    if (!dataAsist.success) throw new Error(dataAsist.message || 'Error al guardar');
+
+    notif('✅ Asistencia registrada', 'exito');
+    if (navigator.vibrate) navigator.vibrate([100, 50, 100]);
+    irAPasoConfirmacion(fechaTexto);
+  } catch (err) {
+    console.error('❌ Error:', err);
+    notif('❌ ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✅ Registrar Asistencia';
+  }
+}
+
+document.addEventListener('DOMContentLoaded', function() {
+  console.log('🚀 Portal QR iniciado');
+  console.log('📡 API:', API_URL);
+
+  fetch(API_URL + '?action=ping')
+    .then(function(r) { return r.json(); })
+    .then(function(d) { console.log('✅ API OK'); })
+    .catch(function(e) { console.error('❌ API no responde'); });
+
+  document.getElementById('btn-iniciar-escaner').addEventListener('click', iniciarEscaner);
+  document.getElementById('btn-detener-escaner').addEventListener('click', function() { detenerEscaner(); });
+  document.getElementById('btn-reintentar').addEventListener('click', iniciarEscaner);
+  document.getElementById('btn-buscar').addEventListener('click', function() {
+    procesarCI(document.getElementById('input-ci').value);
+  });
+  document.getElementById('input-ci').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') procesarCI(this.value);
+  });
+  document.getElementById('btn-encender-camara').addEventListener('click', iniciarCamara);
+  document.getElementById('btn-capturar').addEventListener('click', capturarFoto);
+  document.getElementById('btn-repetir').addEventListener('click', reiniciarCamara);
+  document.getElementById('btn-registrar').addEventListener('click', registrarAsistencia);
+  document.getElementById('btn-reiniciar').addEventListener('click', function() {
+    estudianteActual = null; fotoBase64 = null; irAPasoEscanear();
+  });
+});
+
+window.addEventListener('beforeunload', function() {
+  detenerCamaraFoto();
+  if (qrScanner && escanerActivo) qrScanner.stop().catch(function() {});
+});
+</script>
 </body>
 </html>
